@@ -1,0 +1,12 @@
+services:
+  api:
+    container_name: nfs-server
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - ${API_PORT}:3001
+    volumes:
+      - ./nfs:/app/nfs
