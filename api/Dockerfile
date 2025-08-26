@@ -1,12 +1,12 @@
 FROM golang:alpine
 
-WORKDIR /app
+WORKDIR /app/api
 
-COPY ./go.mod ./go.sum /app/
+COPY ./go.mod ./go.sum /
 
 RUN go mod download
 
-COPY ./ /app/
+COPY ./ /
 
 RUN go build ./main.go
 
