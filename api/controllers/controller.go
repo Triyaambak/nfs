@@ -7,5 +7,6 @@ import (
 type Controller struct{}
 
 func (c *Controller) FileServer(dir string) http.Handler {
-	return http.FileServer(http.Dir(dir))
+	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
 }
+

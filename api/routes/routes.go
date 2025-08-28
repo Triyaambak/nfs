@@ -9,5 +9,5 @@ import (
 
 func SetUpRoutes(router *chi.Mux, serverConfig *types.ServerConfig) {
 	c := controller.Controller{}
-	(*router).Mount("/static", c.FileServer((*serverConfig).Dir))
+	(*router).Mount("/", c.FileServer((*serverConfig).Dir))
 }
