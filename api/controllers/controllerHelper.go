@@ -17,6 +17,15 @@ func isEmptyDir(w http.ResponseWriter, dir string) bool {
 	return false
 }
 
+func createFolder(w http.ResponseWriter, path string) error {
+	if err := os.MkdirAll(path, 0777); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, `{"error":"failed to create parent dirs: %v"}`, err)
+		return err
+	}
+	return nil
+}
+
 func pathAlreadyTaken(w http.ResponseWriter, path string) (bool, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false, nil
