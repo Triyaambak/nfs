@@ -1,20 +1,45 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	routes "github.com/Triyaambak/nfs/routes"
+	types "github.com/Triyaambak/nfs/types"
+
+	"github.com/go-chi/chi"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	dir := ".././nfs"
-
-	fs := http.FileServer(http.Dir(dir))
-
-	http.Handle("/", fs)
-
-	log.Println("Serving files from", dir, "on :8080")
-	err := http.ListenAndServe(":8080", nil)
+	err := godotenv.Load("./.env")
 	if err != nil {
+		log.Fatal("Something went wrong while reading .env file :", err)
+	}
+
+	serverConfig := types.ServerConfig{}
+	serverConfig.Port = os.Getenv("API_PORT")
+	serverConfig.Dir = os.Getenv("NFS_DIR")
+
+	if serverConfig.Port == "" || serverConfig.Dir == "" {
+		log.Fatalf("Both port and dir cannot be empty port:%s dir:%s", serverConfig.Port, serverConfig.Dir)
+	}
+	adr := fmt.Sprintf(":%s", serverConfig.Port)
+
+	router := chi.NewMux()
+	routes.SetUpRoutes(router, &serverConfig)
+
+	server := http.Server{
+		Addr:    adr,
+		Handler: router,
+	}
+
+	fmt.Println("Starting server on port " + adr)
+	err = server.ListenAndServe()
+	if err != nil {
+		fmt.Println("Server crashed")
 		log.Fatal(err)
 	}
 }

@@ -1,13 +1,17 @@
 FROM golang:alpine
 
+ARG API_PORT
+
 WORKDIR /app/api
 
-COPY ./go.mod ./go.sum /
+COPY go.mod go.sum ./
 
 RUN go mod download
 
-COPY ./ /
+COPY ./ ./
 
 RUN go build ./main.go
 
-CMD ["sh","./main"]
+EXPOSE ${API_PORT}
+
+CMD ["./main"]
