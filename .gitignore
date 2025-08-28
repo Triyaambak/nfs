@@ -1,4 +1,6 @@
 /api/.env
-
+/api/vendor
+/api/go.sum
+/api/main
 
 .env
