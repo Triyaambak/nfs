@@ -19,12 +19,12 @@ func isEmptyDir(w http.ResponseWriter, dir string) bool {
 
 func pathAlreadyTaken(w http.ResponseWriter, path string) (bool, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return true, nil
+		return false, nil
 	} else if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, "Error accessing file: ", err)
-		return true, err
+		return false, err
 	}
 
-	return false, nil
+	return true, nil
 }

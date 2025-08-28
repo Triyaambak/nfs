@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Triyaambak/nfs/types"
 	"github.com/go-chi/chi"
 )
 
@@ -14,12 +15,18 @@ type Path struct {
 	Dir string `json:"dir"`
 }
 
-func (c *Controller) FileServer(dir string) http.Handler {
+func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
+	dir := (*serverConfig).Dir
 	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
 }
 
-func (c *Controller) GetFile(dir string) http.HandlerFunc {
+func (c *Controller) GetFile(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		dir := (*serverConfig).Dir
+
+		serverConfig.MU.RLock()
+		defer serverConfig.MU.RUnlock()
+
 		path := chi.URLParam(r, "*")
 
 		if isEmptyDir(w, path) {
@@ -35,14 +42,20 @@ func (c *Controller) GetFile(dir string) http.HandlerFunc {
 		if !isTaken {
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "Path nfs/%s does not exist", path)
+			return
 		}
 
 		http.ServeFile(w, r, fullPath)
 	}
 }
 
-func (c *Controller) CreateFile(dir string) http.HandlerFunc {
+func (c *Controller) CreateFile(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		dir := (*serverConfig).Dir
+
+		serverConfig.MU.Lock()
+		defer serverConfig.MU.Unlock()
+
 		w.Header().Set("Content-Type", "application/json")
 
 		var path Path
