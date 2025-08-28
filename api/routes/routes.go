@@ -10,5 +10,8 @@ import (
 func SetUpRoutes(router *chi.Mux, serverConfig *types.ServerConfig) {
 	c := controller.Controller{}
 	(*router).Mount("/", c.FileServer((*serverConfig).Dir))
+
+	(*router).Get("/fetch/*", c.GetFile((*serverConfig).Dir))
+
 	(*router).Post("/create", c.CreateFile((*serverConfig).Dir))
 }

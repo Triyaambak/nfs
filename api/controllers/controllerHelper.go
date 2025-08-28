@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
 )
 
 func isEmptyDir(w http.ResponseWriter, dir string) bool {
@@ -14,4 +15,16 @@ func isEmptyDir(w http.ResponseWriter, dir string) bool {
 	}
 
 	return false
+}
+
+func pathAlreadyTaken(w http.ResponseWriter, path string) (bool, error) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return true, nil
+	} else if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Error accessing file: ", err)
+		return true, err
+	}
+
+	return false, nil
 }
