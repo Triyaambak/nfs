@@ -11,6 +11,7 @@ func SetUpRoutes(router *chi.Mux, serverConfig *types.ServerConfig) {
 	c := controller.Controller{}
 	(*router).Mount("/", c.FileServer(serverConfig))
 
+	(*router).Get("/ls/*", c.LS(serverConfig))
 	(*router).Get("/cat/*", c.Cat(serverConfig))
 
 	(*router).Post("/mkdir/*", c.Create(serverConfig, true))

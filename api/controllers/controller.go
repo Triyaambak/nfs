@@ -24,6 +24,44 @@ func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 
 		serverConig.MU.RLock()
 		defer serverConig.MU.Unlock()
+
+		path := chi.URLParam(r, "*")
+		if err := isParamEmpty(path); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		fullPath := filepath.Join(dir, path)
+		isTaken, err := pathExist(fullPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		if !isTaken {
+			http.Error(w, fmt.Sprintf("Path %s does not exist", path), http.StatusBadRequest)
+			return
+		}
+
+		info, _ := os.Stat(fullPath)
+
+		if info.IsDir() {
+			entries, err := os.ReadDir(fullPath)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Failed to read directory: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			for _, e := range entries {
+				if e.IsDir() {
+					fmt.Fprintf(w, "%s/\n", e.Name())
+				} else {
+					fmt.Fprintf(w, "%s\n", e.Name())
+				}
+			}
+		} else {
+			// It's a file → just print its name
+			fmt.Fprintf(w, "%s\n", info.Name())
+		}
 	}
 }
 
