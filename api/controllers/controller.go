@@ -18,6 +18,15 @@ func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
 	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
 }
 
+func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dir := (*serverConig).Dir
+
+		serverConig.MU.RLock()
+		defer serverConig.MU.Unlock()
+	}
+}
+
 func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dir := (*serverConfig).Dir
