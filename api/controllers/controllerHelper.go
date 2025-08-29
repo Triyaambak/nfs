@@ -6,7 +6,6 @@ import (
 )
 
 func isParamEmpty(dir string) error {
-
 	if dir == "" {
 		return fmt.Errorf("Bad Request - No dir found in REQUEST body")
 	}
@@ -18,6 +17,7 @@ func createFolder(path string) error {
 	if err := os.MkdirAll(path, 0777); err != nil {
 		return fmt.Errorf("Failed to create parent dirs: %v", err)
 	}
+
 	return nil
 }
 

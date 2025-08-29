@@ -29,11 +29,13 @@ func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 
 		if err := isParamEmpty(path); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		fullPath := fmt.Sprintf("%s/%s", dir, path)
+		fullPath := filepath.Join(dir, path)
 		if filepath.Ext(fullPath) == "" {
 			http.Error(w, fmt.Sprintln("Bad Request , no file extension mentioned"), http.StatusBadRequest)
+			return
 		}
 		isTaken, err := pathExist(fullPath)
 		if err != nil {
@@ -73,9 +75,10 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) htt
 
 		if err := isParamEmpty(path); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		fullPath := fmt.Sprintf("%s/%s", dir, path)
+		fullPath := filepath.Join(dir, path)
 		isPathTaken, err := pathExist(fullPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -95,6 +98,7 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) htt
 
 			if filepath.Ext(fullPath) == "" {
 				http.Error(w, fmt.Sprintln("Bad Request , no file extension mentioned"), http.StatusBadRequest)
+				return
 			}
 
 			doesFolderExist, err := pathExist(filepath.Dir(fullPath))
@@ -108,12 +112,13 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) htt
 				return
 			}
 
-			_, err = os.Create(fullPath)
+			f, err := os.Create(fullPath)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				fmt.Fprintf(w, `{"error":"failed to create file: %v"}`, err)
 				return
 			}
+			defer f.Close()
 		}
 
 		w.WriteHeader(http.StatusCreated)
