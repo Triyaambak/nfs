@@ -6,7 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Triyaambak/nfs/types"
+	types "github.com/Triyaambak/nfs/types"
+
 	"github.com/go-chi/chi"
 )
 
@@ -17,7 +18,7 @@ func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
 	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
 }
 
-func (c *Controller) Fetch(serverConfig *types.ServerConfig) http.HandlerFunc {
+func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dir := (*serverConfig).Dir
 
@@ -26,19 +27,32 @@ func (c *Controller) Fetch(serverConfig *types.ServerConfig) http.HandlerFunc {
 
 		path := chi.URLParam(r, "*")
 
-		if isEmptyDir(w, path) {
-			return
+		if err := isParamEmpty(path); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 
 		fullPath := fmt.Sprintf("%s/%s", dir, path)
-		isTaken, err := pathAlreadyTaken(w, fullPath)
+		if filepath.Ext(fullPath) == "" {
+			http.Error(w, fmt.Sprintln("Bad Request , no file extension mentioned"), http.StatusBadRequest)
+		}
+		isTaken, err := pathExist(fullPath)
 		if err != nil {
-			return
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
 		if !isTaken {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Path nfs/%s does not exist", path)
+			http.Error(w, fmt.Sprintf("Path %s does not exist", path), http.StatusBadRequest)
+			return
+		}
+
+		isF, err := isFile(fullPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !isF {
+			http.Error(w, fmt.Sprintf("Traget is not a file but a folder : %s", path), http.StatusBadRequest)
 			return
 		}
 
@@ -46,7 +60,7 @@ func (c *Controller) Fetch(serverConfig *types.ServerConfig) http.HandlerFunc {
 	}
 }
 
-func (c *Controller) Create(serverConfig *types.ServerConfig, isFile bool) http.HandlerFunc {
+func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dir := (*serverConfig).Dir
 
@@ -57,31 +71,44 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFile bool) http.
 
 		path := chi.URLParam(r, "*")
 
-		if isEmptyDir(w, path) {
-			return
+		if err := isParamEmpty(path); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 
 		fullPath := fmt.Sprintf("%s/%s", dir, path)
-		isTaken, err := pathAlreadyTaken(w, fullPath)
+		isPathTaken, err := pathExist(fullPath)
 		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		if isPathTaken {
+			http.Error(w, fmt.Sprintf("Path %s already exists", path), http.StatusBadRequest)
 			return
 		}
 
-		if isTaken {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Path nfs/%s already exists", path)
-			return
-		}
-
-		if !isFile {
-			if err := createFolder(w, fullPath); err != nil {
+		if isFolder {
+			if err := createFolder(fullPath); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		} else {
-			if err := createFolder(w, filepath.Dir(path)); err != nil {
+
+			if filepath.Ext(fullPath) == "" {
+				http.Error(w, fmt.Sprintln("Bad Request , no file extension mentioned"), http.StatusBadRequest)
+			}
+
+			doesFolderExist, err := pathExist(filepath.Dir(fullPath))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			_, err := os.Create(fullPath)
+
+			if !doesFolderExist {
+				http.Error(w, fmt.Sprintf("Folder %s does not exist", filepath.Dir(fullPath)), http.StatusBadRequest)
+				return
+			}
+
+			_, err = os.Create(fullPath)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				fmt.Fprintf(w, `{"error":"failed to create file: %v"}`, err)
@@ -90,10 +117,10 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFile bool) http.
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		if !isTaken {
-			fmt.Fprintf(w, "Successfully created folder at path nfs/%s", path)
+		if isFolder {
+			fmt.Fprintf(w, "Successfully created folder at path %s", path)
 		} else {
-			fmt.Fprintf(w, "Successfully created file at path nfs/%s", path)
+			fmt.Fprintf(w, "Successfully created file at path %s", path)
 		}
 	}
 }

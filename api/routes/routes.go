@@ -11,9 +11,9 @@ func SetUpRoutes(router *chi.Mux, serverConfig *types.ServerConfig) {
 	c := controller.Controller{}
 	(*router).Mount("/", c.FileServer(serverConfig))
 
-	(*router).Get("/cat/*", c.Fetch(serverConfig))
+	(*router).Get("/cat/*", c.Cat(serverConfig))
 
-	(*router).Post("/mkdir/*", c.Create(serverConfig, false))
-	(*router).Post("/touch/*", c.Create(serverConfig, true))
+	(*router).Post("/mkdir/*", c.Create(serverConfig, true))
+	(*router).Post("/touch/*", c.Create(serverConfig, false))
 
 }

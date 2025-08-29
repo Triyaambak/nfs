@@ -2,36 +2,41 @@ package controllers
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 )
 
-func isEmptyDir(w http.ResponseWriter, dir string) bool {
+func isParamEmpty(dir string) error {
 
 	if dir == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "Bad Request - No dir found in REQUEST body")
-		return true
+		return fmt.Errorf("Bad Request - No dir found in REQUEST body")
 	}
 
-	return false
+	return nil
 }
 
-func createFolder(w http.ResponseWriter, path string) error {
+func createFolder(path string) error {
 	if err := os.MkdirAll(path, 0777); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, `{"error":"failed to create parent dirs: %v"}`, err)
-		return err
+		return fmt.Errorf("Failed to create parent dirs: %v", err)
 	}
 	return nil
 }
 
-func pathAlreadyTaken(w http.ResponseWriter, path string) (bool, error) {
+func isFile(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, fmt.Errorf("Something went wrong in isFile function %v", err)
+	}
+	if !info.Mode().IsRegular() {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func pathExist(path string) (bool, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false, nil
 	} else if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Error accessing file: ", err)
 		return false, err
 	}
 
