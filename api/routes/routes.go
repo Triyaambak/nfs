@@ -13,8 +13,8 @@ func SetUpRoutes(router *chi.Mux, serverConfig *types.ServerConfig) {
 
 	(*router).Get("/ls/*", c.LS(serverConfig))
 	(*router).Get("/cat/*", c.Cat(serverConfig))
-
-	(*router).Post("/mkdir/*", c.Create(serverConfig, true))
-	(*router).Post("/touch/*", c.Create(serverConfig, false))
+	(*router).Get("/mv/*", c.MV(serverConfig))
+	(*router).Get("/mkdir/*", c.Create(serverConfig, true))
+	(*router).Get("/touch/*", c.Create(serverConfig, false))
 
 }

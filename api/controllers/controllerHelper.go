@@ -5,6 +5,28 @@ import (
 	"os"
 )
 
+func splitPath(path string) (srcPath, destPath string, err error) {
+	runes := []rune(path)
+	idx := -1
+	for i, c := range runes {
+		if c == ' ' {
+			if idx != -1 {
+				return "", "", fmt.Errorf("%s contains multiple '-' , please keep only one whitespace", path)
+			}
+			idx = i
+		}
+	}
+
+	if idx == -1 {
+		return "", "", fmt.Errorf("%s does not contain even one whitespace to distinguish between src and dest path", path)
+	}
+
+	srcPath = path[:idx]
+	destPath = path[idx+1:]
+
+	return srcPath, destPath, nil
+}
+
 func isParamEmpty(dir string) error {
 	if dir == "" {
 		return fmt.Errorf("Bad Request - No dir found in REQUEST body")

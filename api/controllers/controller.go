@@ -18,23 +18,82 @@ func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
 	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
 }
 
+func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dir := (*serverConfig).Dir
+
+		serverConfig.MU.Lock()
+		defer serverConfig.MU.Unlock()
+
+		path := chi.URLParam(r, "*")
+
+		srcPath, destPath, err := splitPath(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		srcFullPath := filepath.Join(dir, srcPath)
+		destFullPath := filepath.Join(dir, destPath)
+
+		isTaken, err := pathExist(srcFullPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !isTaken {
+			http.Error(w, fmt.Sprintf("Path %s does not exist", srcPath), http.StatusBadRequest)
+			return
+		}
+
+		isTaken, err = pathExist(destFullPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if isTaken {
+			http.Error(w, fmt.Sprintf("Path %s already exist , cannot overwrite", destPath), http.StatusBadRequest)
+			return
+		}
+
+		isTaken, err = pathExist(filepath.Dir(destFullPath))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !isTaken {
+			http.Error(w, fmt.Sprintf("Parent directory %s for dest path %s does not exist", filepath.Dir(destPath), destPath), http.StatusBadRequest)
+			return
+		}
+
+		err = os.Rename(srcFullPath, destFullPath)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error moving %s to %s: %v", srcPath, destPath, err), http.StatusInternalServerError)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Moved %s to %s", srcPath, destPath)
+
+	}
+}
+
 func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dir := (*serverConig).Dir
 
 		serverConig.MU.RLock()
-		defer serverConig.MU.Unlock()
+		defer serverConig.MU.RUnlock()
 
 		path := chi.URLParam(r, "*")
-		if err := isParamEmpty(path); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 
 		fullPath := filepath.Join(dir, path)
 		isTaken, err := pathExist(fullPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		if !isTaken {
@@ -129,6 +188,7 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) htt
 		isPathTaken, err := pathExist(fullPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		if isPathTaken {
