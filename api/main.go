@@ -22,6 +22,7 @@ func main() {
 	serverConfig := types.ServerConfig{}
 	serverConfig.Port = os.Getenv("API_PORT")
 	serverConfig.Dir = os.Getenv("NFS_DIR")
+	serverConfig.Secret = []byte(os.Getenv("SECRET_KEY"))
 
 	if serverConfig.Port == "" || serverConfig.Dir == "" {
 		log.Fatalf("Both port and dir cannot be empty port:%s dir:%s", serverConfig.Port, serverConfig.Dir)

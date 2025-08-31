@@ -1,6 +1,7 @@
 package routes
 
 import (
+	middleware "github.com/Triyaambak/nfs/middleware"
 	controller "github.com/Triyaambak/nfs/controllers"
 	types "github.com/Triyaambak/nfs/types"
 
@@ -9,12 +10,17 @@ import (
 
 func SetUpRoutes(router *chi.Mux, serverConfig *types.ServerConfig) {
 	c := controller.Controller{}
-	(*router).Mount("/", c.FileServer(serverConfig))
 
-	(*router).Get("/ls/*", c.LS(serverConfig))
-	(*router).Get("/cat/*", c.Cat(serverConfig))
-	(*router).Get("/mv/*", c.MV(serverConfig))
-	(*router).Get("/mkdir/*", c.Create(serverConfig, true))
-	(*router).Get("/touch/*", c.Create(serverConfig, false))
+	(*router).Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddle(serverConfig))
+		
+		r.Mount("/", c.FileServer(serverConfig))
+
+		r.Get("/ls/*", c.LS(serverConfig))
+		r.Get("/cat/*", c.Cat(serverConfig))
+		r.Get("/mv/*", c.MV(serverConfig))
+		r.Get("/mkdir/*", c.Create(serverConfig, true))
+		r.Get("/touch/*", c.Create(serverConfig, false))
+	})
 
 }

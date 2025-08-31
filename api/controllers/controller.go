@@ -80,12 +80,12 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 	}
 }
 
-func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
+func (c *Controller) LS(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		dir := (*serverConig).Dir
+		dir := (*serverConfig).Dir
 
-		serverConig.MU.RLock()
-		defer serverConig.MU.RUnlock()
+		serverConfig.MU.RLock()
+		defer serverConfig.MU.RUnlock()
 
 		path := chi.URLParam(r, "*")
 
@@ -110,6 +110,8 @@ func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 				return
 			}
 
+			w.WriteHeader(http.StatusOK)
+
 			for _, e := range entries {
 				if e.IsDir() {
 					fmt.Fprintf(w, "%s/\n", e.Name())
@@ -121,7 +123,6 @@ func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 			fmt.Fprintf(w, "%s\n", info.Name())
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
