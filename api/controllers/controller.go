@@ -43,7 +43,7 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 		}
 
 		if !isTaken {
-			http.Error(w, fmt.Sprintf("Path %s does not exist", srcPath), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("Soure path %s does not exist", srcPath), http.StatusBadRequest)
 			return
 		}
 
@@ -54,7 +54,7 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 		}
 
 		if isTaken {
-			http.Error(w, fmt.Sprintf("Path %s already exist , cannot overwrite", destPath), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("Dest path %s already exist , cannot overwrite", destPath), http.StatusBadRequest)
 			return
 		}
 
@@ -71,11 +71,11 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 
 		err = os.Rename(srcFullPath, destFullPath)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error moving %s to %s: %v", srcPath, destPath, err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error moving src path %s to dest path %s: %v", srcPath, destPath, err), http.StatusInternalServerError)
 		}
 
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Moved %s to %s", srcPath, destPath)
+		fmt.Fprintf(w, "Moved src path %s to dst path %s", srcPath, destPath)
 
 	}
 }
@@ -118,9 +118,10 @@ func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 				}
 			}
 		} else {
-			// It's a file → just print its name
 			fmt.Fprintf(w, "%s\n", info.Name())
 		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -146,6 +147,7 @@ func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 		isTaken, err := pathExist(fullPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		if !isTaken {
