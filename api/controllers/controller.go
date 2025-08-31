@@ -15,7 +15,6 @@ import (
 type Controller struct{}
 
 func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
-	dir := (*serverConfig).Dir
 	return http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authToken, err := middleware.GetAuthToken(r)
 		if err != nil {
@@ -28,12 +27,25 @@ func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
 			return
 		}
 
+		dir := (*serverConfig).Dir
+
 		http.FileServer(http.Dir(dir)).ServeHTTP(w, r)
 	}))
 }
 
 func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		authToken, err := middleware.GetAuthToken(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
 		dir := (*serverConfig).Dir
 
 		serverConfig.MU.Lock()
@@ -96,6 +108,17 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 
 func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		authToken, err := middleware.GetAuthToken(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
 		dir := (*serverConig).Dir
 
 		serverConig.MU.RLock()
@@ -141,6 +164,17 @@ func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 
 func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		authToken, err := middleware.GetAuthToken(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
 		dir := (*serverConfig).Dir
 
 		serverConfig.MU.RLock()
@@ -186,6 +220,17 @@ func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 
 func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		authToken, err := middleware.GetAuthToken(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
 		dir := (*serverConfig).Dir
 
 		serverConfig.MU.Lock()
