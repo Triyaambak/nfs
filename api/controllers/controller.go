@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	middleware "github.com/Triyaambak/nfs/middleware"
 	types "github.com/Triyaambak/nfs/types"
 
 	"github.com/go-chi/chi"
@@ -15,37 +14,12 @@ import (
 type Controller struct{}
 
 func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
-	return http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authToken, err := middleware.GetAuthToken(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
-		dir := (*serverConfig).Dir
-
-		http.FileServer(http.Dir(dir)).ServeHTTP(w, r)
-	}))
+	dir := (*serverConfig).Dir
+	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
 }
 
 func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authToken, err := middleware.GetAuthToken(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
 		dir := (*serverConfig).Dir
 
 		serverConfig.MU.Lock()
@@ -108,17 +82,6 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 
 func (c *Controller) LS(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authToken, err := middleware.GetAuthToken(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
 		dir := (*serverConfig).Dir
 
 		serverConfig.MU.RLock()
@@ -147,6 +110,8 @@ func (c *Controller) LS(serverConfig *types.ServerConfig) http.HandlerFunc {
 				return
 			}
 
+			w.WriteHeader(http.StatusOK)
+
 			for _, e := range entries {
 				if e.IsDir() {
 					fmt.Fprintf(w, "%s/\n", e.Name())
@@ -158,23 +123,11 @@ func (c *Controller) LS(serverConfig *types.ServerConfig) http.HandlerFunc {
 			fmt.Fprintf(w, "%s\n", info.Name())
 		}
 
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
 func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authToken, err := middleware.GetAuthToken(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
 		dir := (*serverConfig).Dir
 
 		serverConfig.MU.RLock()
@@ -220,17 +173,6 @@ func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 
 func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authToken, err := middleware.GetAuthToken(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
 		dir := (*serverConfig).Dir
 
 		serverConfig.MU.Lock()
