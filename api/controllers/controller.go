@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	middleware "github.com/Triyaambak/nfs/middleware"
 	types "github.com/Triyaambak/nfs/types"
 
 	"github.com/go-chi/chi"
@@ -15,7 +16,20 @@ type Controller struct{}
 
 func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
 	dir := (*serverConfig).Dir
-	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
+	return http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authToken, err := middleware.GetAuthToken(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		_, _, err = middleware.ValidateJWT(serverConfig, authToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		http.FileServer(http.Dir(dir)).ServeHTTP(w, r)
+	}))
 }
 
 func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
