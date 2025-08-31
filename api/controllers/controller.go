@@ -106,7 +106,7 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 	}
 }
 
-func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
+func (c *Controller) LS(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authToken, err := middleware.GetAuthToken(r)
 		if err != nil {
@@ -119,10 +119,10 @@ func (c *Controller) LS(serverConig *types.ServerConfig) http.HandlerFunc {
 			return
 		}
 
-		dir := (*serverConig).Dir
+		dir := (*serverConfig).Dir
 
-		serverConig.MU.RLock()
-		defer serverConig.MU.RUnlock()
+		serverConfig.MU.RLock()
+		defer serverConfig.MU.RUnlock()
 
 		path := chi.URLParam(r, "*")
 
