@@ -11,4 +11,7 @@ services:
     ports:
       - ${API_PORT}:3001
     volumes:
-      - ./nfs:/app/nfs
+      - nfs_volume:/app/nfs
+
+volumes:
+  nfs_volume:

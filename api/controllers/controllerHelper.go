@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func splitPath(path string) (srcPath, destPath string, err error) {
@@ -25,6 +27,38 @@ func splitPath(path string) (srcPath, destPath string, err error) {
 	destPath = path[idx+1:]
 
 	return srcPath, destPath, nil
+}
+
+func getWriteMode(urlParam string) (body, path string, isAppend bool, err error) {
+	startIndex := -1
+	endIndex := -1
+
+	for i, c := range urlParam {
+		if c == '>' {
+			if startIndex == -1 {
+				startIndex = i
+				endIndex = i
+			} else {
+				endIndex = i
+			}
+		}
+	}
+
+	if startIndex == -1 {
+		return "", "", false, errors.New("Url does not contain > to specify wether to write or append, please specify")
+	}
+
+	if startIndex == endIndex {
+		isAppend = false
+	} else {
+		isAppend = true
+	}
+
+	body = strings.TrimSpace(urlParam[:startIndex])
+
+	path = strings.TrimSpace(urlParam[endIndex+1:])
+
+	return body, path, isAppend, nil
 }
 
 func isParamEmpty(dir string) error {
