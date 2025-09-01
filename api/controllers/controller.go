@@ -78,7 +78,11 @@ func (c *Controller) Echo(serverConfig *types.ServerConfig) http.HandlerFunc {
 		}
 		defer f.Close()
 
-		f.WriteString(body)
+		_, err = f.Write([]byte(body))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to write to file in path %s", path), http.StatusInternalServerError)
+			return
+		}
 
 		w.WriteHeader(http.StatusOK)
 		if !isAppend {
