@@ -18,6 +18,81 @@ func (c *Controller) FileServer(serverConfig *types.ServerConfig) http.Handler {
 	return http.StripPrefix("/", http.FileServer(http.Dir(dir)))
 }
 
+func (c *Controller) Echo(serverConfig *types.ServerConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dir := (*serverConfig).Dir
+
+		serverConfig.MU.Lock()
+		defer serverConfig.MU.Unlock()
+
+		urlParam := chi.URLParam(r, "*")
+		if err := isParamEmpty(urlParam); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		body, path, isAppend, err := getWriteMode(urlParam)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		fullPath := filepath.Join(dir, path)
+		isTaken, err := pathExist(fullPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !isTaken {
+			http.Error(w, fmt.Sprintf("Soure path %s does not exist", path), http.StatusBadRequest)
+			return
+		}
+
+		isF, err := isFile(fullPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !isF {
+			http.Error(w, fmt.Sprintf("Traget is not a file but a folder : %s", path), http.StatusBadRequest)
+			return
+		}
+
+		if body == "" {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "%s file modified", path)
+			return
+		}
+
+		var f *os.File
+		if !isAppend {
+			f, err = os.OpenFile(fullPath, os.O_WRONLY|os.O_TRUNC, 0644)
+		} else {
+			f, err = os.OpenFile(fullPath, os.O_WRONLY|os.O_APPEND, 0644)
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		_, err = f.Write([]byte(body))
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to write to file in path %s", path), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		if !isAppend {
+			fmt.Fprintf(w, "%s file overwritten", path)
+		} else {
+			fmt.Fprintf(w, "%s file appended", path)
+		}
+	}
+}
+
 func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dir := (*serverConfig).Dir
@@ -26,6 +101,10 @@ func (c *Controller) MV(serverConfig *types.ServerConfig) http.HandlerFunc {
 		defer serverConfig.MU.Unlock()
 
 		path := chi.URLParam(r, "*")
+		if err := isParamEmpty(path); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		srcPath, destPath, err := splitPath(path)
 		if err != nil {
@@ -88,6 +167,10 @@ func (c *Controller) LS(serverConfig *types.ServerConfig) http.HandlerFunc {
 		defer serverConfig.MU.RUnlock()
 
 		path := chi.URLParam(r, "*")
+		if err := isParamEmpty(path); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		fullPath := filepath.Join(dir, path)
 		isTaken, err := pathExist(fullPath)
@@ -134,7 +217,6 @@ func (c *Controller) Cat(serverConfig *types.ServerConfig) http.HandlerFunc {
 		defer serverConfig.MU.RUnlock()
 
 		path := chi.URLParam(r, "*")
-
 		if err := isParamEmpty(path); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -181,7 +263,6 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) htt
 		w.Header().Set("Content-Type", "application/json")
 
 		path := chi.URLParam(r, "*")
-
 		if err := isParamEmpty(path); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
