@@ -258,7 +258,7 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) htt
 		dir := (*serverConfig).Dir
 
 		ctxData := r.Context().Value(serverConfig.ContextKey).(*types.ContextDataType)
-		uid, gid, name, group := fetchContextData(ctxData)
+		uid, gid, _, _ := fetchContextData(ctxData)
 
 		serverConfig.MU.Lock()
 		defer serverConfig.MU.Unlock()
@@ -281,11 +281,6 @@ func (c *Controller) Create(serverConfig *types.ServerConfig, isFolder bool) htt
 		if isPathTaken {
 			http.Error(w, fmt.Sprintf("Path %s already exists", path), http.StatusBadRequest)
 			return
-		}
-
-		err = renameID(gid, uid, name, group)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
 		if isFolder {

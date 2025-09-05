@@ -4,9 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"os/user"
-	"strconv"
 	"strings"
 
 	types "github.com/Triyaambak/nfs/types"
@@ -32,33 +29,6 @@ func splitPath(path string) (srcPath, destPath string, err error) {
 	destPath = path[idx+1:]
 
 	return srcPath, destPath, nil
-}
-
-func renameID(gid, uid int, name, group string) error {
-	oldGroupName, err := user.LookupGroupId(strconv.Itoa(gid))
-	if err != nil {
-		return fmt.Errorf("group with gid %d cannot be found", gid)
-	}
-
-	cmd := exec.Command("sudo", "groupmod", "-n", group, oldGroupName.Name)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to rename group: %v, output: %s", err, string(output))
-	}
-
-	oldName, err := user.LookupId(strconv.Itoa(uid))
-	if err != nil {
-		return fmt.Errorf("user with uid %d cannot be found", uid)
-	}
-
-	cmd = exec.Command("sudo", "groupmod", "-n", name, oldName.Name)
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to rename name: %v, output: %s", err, string(output))
-	}
-
-	return nil
-
 }
 
 func fetchContextData(ctxData *types.ContextDataType) (uid, gid int, name, group string) {
