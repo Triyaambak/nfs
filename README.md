@@ -18,6 +18,8 @@ docker compose up
 
 Routes
 
+##### Sample JWT Auth Token - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIxIiwibmFtZSI6ImFsaWNlIiwiZ2lkIjoiMjAiLCJncm91cCI6InN0YWZmIiwiaWF0IjoxNTE2MjM5MDIyfQ.0CW30reVqoXW4diiNxK7R-WCGbhxDpWK7O-5TtSTiCw
+
 - / : Interactive file system
 - ls : http://localhost:3001/ls/{directory} || http://localhost:3001/ls/{file_path}
 - mkdir : http://localhost:3001/ls/{directory}
