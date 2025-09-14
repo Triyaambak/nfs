@@ -26,7 +26,11 @@ func main() {
 	serverConfig.ContextKey = "data"
 
 	if serverConfig.Port == "" || serverConfig.Dir == "" {
-		log.Fatalf("Both port and dir cannot be empty port:%s dir:%s", serverConfig.Port, serverConfig.Dir)
+		log.Fatalf(
+			"Both port and dir cannot be empty port:%s dir:%s",
+			serverConfig.Port,
+			serverConfig.Dir,
+		)
 	}
 	adr := fmt.Sprintf(":%s", serverConfig.Port)
 
